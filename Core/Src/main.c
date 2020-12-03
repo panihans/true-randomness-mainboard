@@ -74,6 +74,31 @@ static void MX_TIM17_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+typedef struct Command {
+	int16_t motor1;
+	int16_t motor2;
+	int16_t motor3;
+	uint16_t thrower;
+	uint8_t led;
+	uint16_t delimiter;
+} Command;
+
+Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .led = 0, .delimiter = 0};
+Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .led = 0, .delimiter = 0};
+
+volatile uint8_t command_received = 0;
+
+void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
+	if (*length  == sizeof(Command)) {
+		memcpy(&command, buffer, sizeof(Command));
+
+		if (command.delimiter == 0xAAAA) {
+			command_received = 1;
+		}
+	}
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -125,6 +150,16 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	if (command_received == 1) {
+		command_received = 0;
+
+		feedback.motor1 = 0;
+		feedback.motor2 = 0;
+		feedback.motor3 = 0;
+		feedback.thrower = 0;
+		feedback.led = 0;
+		CDC_Transmit_FS(&feedback, sizeof(feedback));
+	}
   }
   /* USER CODE END 3 */
 }
@@ -202,7 +237,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 0;
+  htim1.Init.Prescaler = 100;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 65535;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -283,9 +318,9 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 100;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4.294967295E9;
+  htim2.Init.Period = 65535;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
@@ -332,7 +367,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
+  htim3.Init.Prescaler = 100;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -391,7 +426,7 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 0;
+  htim4.Init.Prescaler = 100;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -439,7 +474,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 0;
+  htim7.Init.Prescaler = 100;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 65535;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -479,7 +514,7 @@ static void MX_TIM8_Init(void)
 
   /* USER CODE END TIM8_Init 1 */
   htim8.Instance = TIM8;
-  htim8.Init.Prescaler = 0;
+  htim8.Init.Prescaler = 100;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim8.Init.Period = 65535;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -537,7 +572,7 @@ static void MX_TIM15_Init(void)
 
   /* USER CODE END TIM15_Init 1 */
   htim15.Instance = TIM15;
-  htim15.Init.Prescaler = 0;
+  htim15.Init.Prescaler = 100;
   htim15.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim15.Init.Period = 65535;
   htim15.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -602,7 +637,7 @@ static void MX_TIM16_Init(void)
 
   /* USER CODE END TIM16_Init 1 */
   htim16.Instance = TIM16;
-  htim16.Init.Prescaler = 0;
+  htim16.Init.Prescaler = 100;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim16.Init.Period = 65535;
   htim16.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -665,7 +700,7 @@ static void MX_TIM17_Init(void)
 
   /* USER CODE END TIM17_Init 1 */
   htim17.Instance = TIM17;
-  htim17.Init.Prescaler = 0;
+  htim17.Init.Prescaler = 100;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim17.Init.Period = 65535;
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
