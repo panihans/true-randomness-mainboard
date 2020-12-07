@@ -78,9 +78,9 @@ typedef struct Command {
 	int16_t motor1;
 	int16_t motor2;
 	int16_t motor3;
-	uint16_t thrower;
-	uint8_t led;
-	uint16_t delimiter;
+	int16_t thrower;
+	int16_t led;
+	int16_t delimiter;
 } Command;
 
 Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .led = 0, .delimiter = 0};
@@ -92,7 +92,7 @@ void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
 	if (*length  == sizeof(Command)) {
 		memcpy(&command, buffer, sizeof(Command));
 
-		if (command.delimiter == 0xAAAA) {
+		if (command.delimiter == 0xBAD) {
 			command_received = 1;
 		}
 	}
@@ -151,13 +151,15 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	if (command_received == 1) {
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 		command_received = 0;
 
-		feedback.motor1 = 0;
-		feedback.motor2 = 0;
-		feedback.motor3 = 0;
-		feedback.thrower = 0;
-		feedback.led = 0;
+		feedback.motor1 = 5;
+		feedback.motor2 = 4;
+		feedback.motor3 = 3;
+		feedback.thrower = 2;
+		feedback.led = 1;
+
 		CDC_Transmit_FS(&feedback, sizeof(feedback));
 	}
   }
