@@ -37,13 +37,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  16 .debug_macro  00020593  00000000  00000000  00040780  2**0
                   CONTENTS, READONLY, DEBUGGING
- 17 .debug_line   00011b7c  00000000  00000000  00060d13  2**0
+ 17 .debug_line   00011b7d  00000000  00000000  00060d13  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_str    000c41e2  00000000  00000000  0007288f  2**0
+ 18 .debug_str    000c41e2  00000000  00000000  00072890  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .comment      0000007b  00000000  00000000  00136a71  2**0
+ 19 .comment      0000007b  00000000  00000000  00136a72  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00005154  00000000  00000000  00136aec  2**2
+ 20 .debug_frame  00005154  00000000  00000000  00136af0  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -209,6 +209,7 @@ int main(void)
  80002c0:	4b05      	ldr	r3, [pc, #20]	; (80002d8 <main+0x80>)
  80002c2:	2201      	movs	r2, #1
  80002c4:	811a      	strh	r2, [r3, #8]
+
 		CDC_Transmit_FS(&feedback, sizeof(feedback));
  80002c6:	210c      	movs	r1, #12
  80002c8:	4803      	ldr	r0, [pc, #12]	; (80002d8 <main+0x80>)
@@ -252,91 +253,94 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
- 800030c:	f44f 7000 	mov.w	r0, #512	; 0x200
- 8000310:	f002 fe0e 	bl	8002f30 <HAL_PWREx_ControlVoltageScaling>
+  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
+ 800030c:	2000      	movs	r0, #0
+ 800030e:	f002 fe0f 	bl	8002f30 <HAL_PWREx_ControlVoltageScaling>
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
- 8000314:	2302      	movs	r3, #2
- 8000316:	65bb      	str	r3, [r7, #88]	; 0x58
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_HSI48;
+ 8000312:	2322      	movs	r3, #34	; 0x22
+ 8000314:	65bb      	str	r3, [r7, #88]	; 0x58
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
- 8000318:	f44f 7380 	mov.w	r3, #256	; 0x100
- 800031c:	667b      	str	r3, [r7, #100]	; 0x64
+ 8000316:	f44f 7380 	mov.w	r3, #256	; 0x100
+ 800031a:	667b      	str	r3, [r7, #100]	; 0x64
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
- 800031e:	2340      	movs	r3, #64	; 0x40
- 8000320:	66bb      	str	r3, [r7, #104]	; 0x68
+ 800031c:	2340      	movs	r3, #64	; 0x40
+ 800031e:	66bb      	str	r3, [r7, #104]	; 0x68
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
+ 8000320:	2301      	movs	r3, #1
+ 8000322:	673b      	str	r3, [r7, #112]	; 0x70
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
- 8000322:	2302      	movs	r3, #2
- 8000324:	677b      	str	r3, [r7, #116]	; 0x74
+ 8000324:	2302      	movs	r3, #2
+ 8000326:	677b      	str	r3, [r7, #116]	; 0x74
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
- 8000326:	2302      	movs	r3, #2
- 8000328:	67bb      	str	r3, [r7, #120]	; 0x78
+ 8000328:	2302      	movs	r3, #2
+ 800032a:	67bb      	str	r3, [r7, #120]	; 0x78
   RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
- 800032a:	2301      	movs	r3, #1
- 800032c:	67fb      	str	r3, [r7, #124]	; 0x7c
-  RCC_OscInitStruct.PLL.PLLN = 12;
- 800032e:	230c      	movs	r3, #12
- 8000330:	f8c7 3080 	str.w	r3, [r7, #128]	; 0x80
+ 800032c:	2301      	movs	r3, #1
+ 800032e:	67fb      	str	r3, [r7, #124]	; 0x7c
+  RCC_OscInitStruct.PLL.PLLN = 20;
+ 8000330:	2314      	movs	r3, #20
+ 8000332:	f8c7 3080 	str.w	r3, [r7, #128]	; 0x80
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
- 8000334:	2302      	movs	r3, #2
- 8000336:	f8c7 3084 	str.w	r3, [r7, #132]	; 0x84
-  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV4;
- 800033a:	2304      	movs	r3, #4
- 800033c:	f8c7 3088 	str.w	r3, [r7, #136]	; 0x88
+ 8000336:	2302      	movs	r3, #2
+ 8000338:	f8c7 3084 	str.w	r3, [r7, #132]	; 0x84
+  RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+ 800033c:	2302      	movs	r3, #2
+ 800033e:	f8c7 3088 	str.w	r3, [r7, #136]	; 0x88
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
- 8000340:	2302      	movs	r3, #2
- 8000342:	f8c7 308c 	str.w	r3, [r7, #140]	; 0x8c
+ 8000342:	2302      	movs	r3, #2
+ 8000344:	f8c7 308c 	str.w	r3, [r7, #140]	; 0x8c
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
- 8000346:	f107 0358 	add.w	r3, r7, #88	; 0x58
- 800034a:	4618      	mov	r0, r3
- 800034c:	f002 fea4 	bl	8003098 <HAL_RCC_OscConfig>
- 8000350:	4603      	mov	r3, r0
- 8000352:	2b00      	cmp	r3, #0
- 8000354:	d001      	beq.n	800035a <SystemClock_Config+0x7e>
+ 8000348:	f107 0358 	add.w	r3, r7, #88	; 0x58
+ 800034c:	4618      	mov	r0, r3
+ 800034e:	f002 fea3 	bl	8003098 <HAL_RCC_OscConfig>
+ 8000352:	4603      	mov	r3, r0
+ 8000354:	2b00      	cmp	r3, #0
+ 8000356:	d001      	beq.n	800035c <SystemClock_Config+0x80>
   {
     Error_Handler();
- 8000356:	f000 fc61 	bl	8000c1c <Error_Handler>
+ 8000358:	f000 fc60 	bl	8000c1c <Error_Handler>
   }
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
- 800035a:	230f      	movs	r3, #15
- 800035c:	647b      	str	r3, [r7, #68]	; 0x44
+ 800035c:	230f      	movs	r3, #15
+ 800035e:	647b      	str	r3, [r7, #68]	; 0x44
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
- 800035e:	2301      	movs	r3, #1
- 8000360:	64bb      	str	r3, [r7, #72]	; 0x48
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+ 8000360:	2303      	movs	r3, #3
+ 8000362:	64bb      	str	r3, [r7, #72]	; 0x48
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
- 8000362:	2300      	movs	r3, #0
- 8000364:	64fb      	str	r3, [r7, #76]	; 0x4c
+ 8000364:	2300      	movs	r3, #0
+ 8000366:	64fb      	str	r3, [r7, #76]	; 0x4c
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
- 8000366:	2300      	movs	r3, #0
- 8000368:	653b      	str	r3, [r7, #80]	; 0x50
+ 8000368:	2300      	movs	r3, #0
+ 800036a:	653b      	str	r3, [r7, #80]	; 0x50
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
- 800036a:	2300      	movs	r3, #0
- 800036c:	657b      	str	r3, [r7, #84]	; 0x54
+ 800036c:	2300      	movs	r3, #0
+ 800036e:	657b      	str	r3, [r7, #84]	; 0x54
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
- 800036e:	f107 0344 	add.w	r3, r7, #68	; 0x44
- 8000372:	2100      	movs	r1, #0
- 8000374:	4618      	mov	r0, r3
- 8000376:	f003 f9a7 	bl	80036c8 <HAL_RCC_ClockConfig>
- 800037a:	4603      	mov	r3, r0
- 800037c:	2b00      	cmp	r3, #0
- 800037e:	d001      	beq.n	8000384 <SystemClock_Config+0xa8>
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
+ 8000370:	f107 0344 	add.w	r3, r7, #68	; 0x44
+ 8000374:	2104      	movs	r1, #4
+ 8000376:	4618      	mov	r0, r3
+ 8000378:	f003 f9a6 	bl	80036c8 <HAL_RCC_ClockConfig>
+ 800037c:	4603      	mov	r3, r0
+ 800037e:	2b00      	cmp	r3, #0
+ 8000380:	d001      	beq.n	8000386 <SystemClock_Config+0xaa>
   {
     Error_Handler();
- 8000380:	f000 fc4c 	bl	8000c1c <Error_Handler>
+ 8000382:	f000 fc4b 	bl	8000c1c <Error_Handler>
   }
   /** Initializes the peripherals clocks
   */
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
- 8000384:	f44f 5300 	mov.w	r3, #8192	; 0x2000
- 8000388:	603b      	str	r3, [r7, #0]
-  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
- 800038a:	f04f 6300 	mov.w	r3, #134217728	; 0x8000000
+ 8000386:	f44f 5300 	mov.w	r3, #8192	; 0x2000
+ 800038a:	603b      	str	r3, [r7, #0]
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+ 800038c:	2300      	movs	r3, #0
  800038e:	637b      	str	r3, [r7, #52]	; 0x34
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
  8000390:	463b      	mov	r3, r7
