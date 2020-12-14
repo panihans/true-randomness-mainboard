@@ -79,14 +79,15 @@ typedef struct Command {
 	int16_t motor2;
 	int16_t motor3;
 	int16_t thrower;
-	int16_t led;
 	int16_t delimiter;
 } Command;
 
-Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .led = 0, .delimiter = 0};
-Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .led = 0, .delimiter = 0};
+Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimiter = 0};
+Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimiter = 0};
 
 volatile uint8_t command_received = 0;
+volatile uint8_t current_period = 0;
+volatile uint8_t command_received_period = 0;
 
 void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
 	if (*length  == sizeof(Command)) {
@@ -141,6 +142,33 @@ int main(void)
   MX_USB_Device_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_1 | TIM_CHANNEL_2);
+  HAL_TIM_Encoder_Start(&htim4, TIM_CHANNEL_1 | TIM_CHANNEL_2);
+  HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_1 | TIM_CHANNEL_2);
+
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_3);
+  TIM1->CCR1 = 0;
+  TIM1->CCR2 = 0;
+  TIM1->CCR3 = 0;
+
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  TIM3->CCR1 = 0;
+  TIM3->CCR2 = 0;
+  TIM3->CCR3 = 0;
+
+  HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim16, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim17, TIM_CHANNEL_1);
+  TIM15->CCR1 = 0;
+  TIM16->CCR1 = 0;
+  TIM17->CCR1 = 0;
+
+  HAL_TIM_Base_Start_IT(&htim7);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -158,8 +186,32 @@ int main(void)
 		feedback.motor2 = 4;
 		feedback.motor3 = 3;
 		feedback.thrower = 2;
-		feedback.led = 1;
 
+		int m1duty = command.motor1 * 130;
+		int m2duty = command.motor2 * 130;
+		int m3duty = command.motor3 * 130;
+		if (m1duty > 0) {
+			TIM1->CCR3 = m1duty;
+			TIM1->CCR2 = 0;
+		} else {
+			TIM1->CCR2 = m1duty;
+			TIM1->CCR3 = 0;
+		}
+		if (m2duty > 0) {
+			TIM1->CCR1 = m2duty;
+			TIM3->CCR3 = 0;
+		} else {
+			TIM3->CCR3 = m2duty;
+			TIM1->CCR1 = 0;
+		}
+		if (m3duty > 0) {
+			TIM3->CCR1 = m3duty;
+			TIM3->CCR2 = 0;
+		} else {
+			TIM3->CCR2 = m3duty;
+			TIM3->CCR2 = 0;
+		}
+		command_received_period = current_period;
 		CDC_Transmit_FS(&feedback, sizeof(feedback));
 	}
   }
@@ -477,7 +529,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 0;
+  htim7.Init.Prescaler = 2400;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 65535;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -779,7 +831,18 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
+	current_period += 1;
+	if (current_period - command_received_period  > 2) {
+		TIM1->CCR1 = 0;
+		TIM1->CCR2 = 0;
+		TIM1->CCR3 = 0;
+		TIM3->CCR1 = 0;
+		TIM3->CCR2 = 0;
+		TIM3->CCR3 = 0;
+	}
+}
 /* USER CODE END 4 */
 
 /**
