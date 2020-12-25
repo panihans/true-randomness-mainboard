@@ -191,28 +191,25 @@ int main(void)
 
 		feedback.thrower = 666;
 
-		uint16_t m1duty = command.motor1 * 130;
-		uint16_t m2duty = command.motor2 * 130;
-		uint16_t m3duty = command.motor3 * 130;
-		if (m1duty > 0) {
-			TIM1->CCR3 = m1duty;
+		if (command.motor1 >= 0) {
+			TIM1->CCR3 = command.motor1 * 130;
 			TIM1->CCR2 = 0;
 		} else {
-			TIM1->CCR2 = m1duty * -1;
+			TIM1->CCR2 = command.motor1 * 130 * -1;
 			TIM1->CCR3 = 0;
 		}
-		if (m2duty > 0) {
-			TIM1->CCR1 = m2duty;
+		if (command.motor2 >= 0) {
+			TIM1->CCR1 = command.motor2 * 130;
 			TIM3->CCR3 = 0;
 		} else {
-			TIM3->CCR3 = m2duty * -1;
+			TIM3->CCR3 = command.motor2 * 130 * -1;
 			TIM1->CCR1 = 0;
 		}
-		if (m3duty > 0) {
-			TIM3->CCR1 = m3duty;
+		if (command.motor3 >= 0) {
+			TIM3->CCR1 = command.motor3 * 130;
 			TIM3->CCR2 = 0;
 		} else {
-			TIM3->CCR2 = m3duty * -1;
+			TIM3->CCR2 = command.motor3 * 130 * -1;
 			TIM3->CCR2 = 0;
 		}
 		command_received_period = current_period;
