@@ -75,11 +75,11 @@ static void MX_TIM17_Init(void);
 /* USER CODE BEGIN 0 */
 
 typedef struct Command {
-	int16_t motor1;
-	int16_t motor2;
-	int16_t motor3;
-	int16_t thrower;
-	int16_t delimiter;
+	int32_t motor1;
+	int32_t motor2;
+	int32_t motor3;
+	int32_t thrower;
+	int32_t delimiter;
 } Command;
 
 Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimiter = 0};
@@ -88,12 +88,19 @@ Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimi
 volatile uint8_t command_received = 0;
 volatile uint8_t current_period = 0;
 volatile uint8_t command_received_period = 0;
+volatile uint16_t motor1_position_prev = 0;
+volatile uint16_t motor2_position_prev = 0;
+volatile uint16_t motor3_position_prev = 0;
+volatile uint8_t motor1_target_rpm = 0;
+volatile uint8_t motor2_target_rpm = 0;
+volatile uint8_t motor3_target_rpm = 0;
+
 
 void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
 	if (*length  == sizeof(Command)) {
 		memcpy(&command, buffer, sizeof(Command));
 
-		if (command.delimiter == 0xBAD) {
+		if (command.delimiter == 0xABCABC) {
 			command_received = 1;
 		}
 	}
@@ -182,33 +189,30 @@ int main(void)
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 		command_received = 0;
 
-		feedback.motor1 = 5;
-		feedback.motor2 = 4;
-		feedback.motor3 = 3;
-		feedback.thrower = 2;
+		feedback.thrower = 666;
 
-		int m1duty = command.motor1 * 130;
-		int m2duty = command.motor2 * 130;
-		int m3duty = command.motor3 * 130;
+		uint16_t m1duty = command.motor1 * 130;
+		uint16_t m2duty = command.motor2 * 130;
+		uint16_t m3duty = command.motor3 * 130;
 		if (m1duty > 0) {
 			TIM1->CCR3 = m1duty;
 			TIM1->CCR2 = 0;
 		} else {
-			TIM1->CCR2 = m1duty;
+			TIM1->CCR2 = m1duty * -1;
 			TIM1->CCR3 = 0;
 		}
 		if (m2duty > 0) {
 			TIM1->CCR1 = m2duty;
 			TIM3->CCR3 = 0;
 		} else {
-			TIM3->CCR3 = m2duty;
+			TIM3->CCR3 = m2duty * -1;
 			TIM1->CCR1 = 0;
 		}
 		if (m3duty > 0) {
 			TIM3->CCR1 = m3duty;
 			TIM3->CCR2 = 0;
 		} else {
-			TIM3->CCR2 = m3duty;
+			TIM3->CCR2 = m3duty * -1;
 			TIM3->CCR2 = 0;
 		}
 		command_received_period = current_period;
@@ -378,7 +382,7 @@ static void MX_TIM2_Init(void)
   htim2.Init.Period = 65535;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -486,7 +490,7 @@ static void MX_TIM4_Init(void)
   htim4.Init.Period = 65535;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -529,7 +533,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 2400;
+  htim7.Init.Prescaler = 40;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 65535;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -575,7 +579,7 @@ static void MX_TIM8_Init(void)
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -832,9 +836,27 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
+	// encoders
+	uint16_t motor1_position = TIM2->CNT;
+	uint16_t motor2_position = TIM4->CNT;
+	uint16_t motor3_position = TIM8->CNT;
+	int32_t motor1_position_change = motor1_position - motor1_position_prev;
+	int32_t motor2_position_change = motor2_position - motor2_position_prev;
+	int32_t motor3_position_change = motor3_position - motor3_position_prev;
+	motor1_position_prev = motor1_position;
+	motor2_position_prev = motor2_position;
+	motor3_position_prev = motor3_position;
+	feedback.motor1 = motor1_position_change * 60 * 60 / 64 / 19 * -1; //60hz, 60s, 64cpr, 19~=18.75 gear ratio, inverted
+	feedback.motor2 = motor2_position_change * 60 * 60 / 64 / 19 * -1;
+	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19 * -1;
+	feedback.thrower = 666;
+
+	// pwm pid
+
+
+	// timeout
 	current_period += 1;
-	if (current_period - command_received_period  > 2) {
+	if (current_period - command_received_period  > 60) {
 		TIM1->CCR1 = 0;
 		TIM1->CCR2 = 0;
 		TIM1->CCR3 = 0;
