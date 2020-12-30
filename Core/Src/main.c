@@ -107,6 +107,41 @@ void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
 }
 
 
+int min_duty = 20000;
+int max_duty = 65000;
+int max_speed = 100;
+
+inline void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * channel_b, int32_t motor_speed) {
+	int speed_cof = (max_duty - min_duty) / max_speed;
+	int speed_cof_n = speed_cof * -1;
+	if (motor_speed > 0) {
+		// forward
+		if (motor_speed <= 100) {
+			// 0 to 100 compact range
+			*channel_a = motor_speed * speed_cof + min_duty;
+		} else {
+			// 100 to 65535 full range
+			*channel_a = motor_speed;
+		}
+		*channel_b = 0;
+	} else if (motor_speed < 0) {
+		// backward
+		if (motor_speed >= -100) {
+			// -100 to 0 compact range
+			*channel_b = motor_speed * speed_cof_n + min_duty;
+		} else {
+			// -65535 to -100 full range
+			*channel_b = motor_speed * -1;
+		}
+		*channel_a = 0;
+	} else {
+		// stop
+		*channel_a = 0;
+		*channel_b = 0;
+	}
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -191,66 +226,10 @@ int main(void)
 
 		feedback.thrower = 666;
 
-		int min_duty = 20000;
-		int max_duty = 65000;
-		int max_speed = 100;
-		int speed_cof = (max_duty - min_duty) / max_speed;
-		int speed_cof_n = speed_cof * -1;
+		Set_Motor_Speed(&(TIM1->CCR3), &(TIM1->CCR2), command.motor1);
+		Set_Motor_Speed(&(TIM1->CCR1), &(TIM3->CCR3), command.motor2);
+		Set_Motor_Speed(&(TIM3->CCR1), &(TIM3->CCR2), command.motor3);
 
-		if (command.motor1 > 0) {
-			if (command.motor1 <= 100) {
-				TIM1->CCR3 = command.motor1 * speed_cof + min_duty;
-			} else {
-				TIM1->CCR3 = command.motor1;
-			}
-			TIM1->CCR2 = 0;
-		} else if (command.motor1 < 0) {
-			if (command.motor1 >= -100) {
-				TIM1->CCR2 = command.motor1 * speed_cof_n;
-			} else {
-				TIM1->CCR2 = command.motor1;
-			}
-			TIM1->CCR3 = 0;
-		} else {
-			TIM1->CCR3 = 0;
-			TIM1->CCR3 = 0;
-		}
-		if (command.motor2 > 0) {
-			if (command.motor2 <= 100) {
-				TIM1->CCR1 = command.motor2 * speed_cof + min_duty;
-			} else {
-				TIM1->CCR1 = command.motor2;
-			}
-			TIM3->CCR3 = 0;
-		} else if (command.motor2 < 0) {
-			if (command.motor2 >= -100) {
-				TIM3->CCR3 = command.motor2 * speed_cof_n;
-			} else {
-				TIM3->CCR3 = command.motor2;
-			}
-			TIM1->CCR1 = 0;
-		} else {
-			TIM3->CCR3 = 0;
-			TIM1->CCR1 = 0;
-		}
-		if (command.motor3 > 0) {
-			if (command.motor3 <= 100) {
-				TIM3->CCR1 = command.motor3 * speed_cof + min_duty;
-			} else {
-				TIM3->CCR1 = command.motor3;
-			}
-			TIM3->CCR2 = 0;
-		} else if (command.motor3 < 0) {
-			if (command.motor3 >= -100) {
-				TIM3->CCR2 = command.motor3 * speed_cof_n;
-			} else {
-				TIM3->CCR2 = command.motor3;
-			}
-			TIM3->CCR1 = 0;
-		} else {
-			TIM3->CCR1 = 0;
-			TIM3->CCR2 = 0;
-		}
 		command_received_period = current_period;
 		CDC_Transmit_FS(&feedback, sizeof(feedback));
 	}

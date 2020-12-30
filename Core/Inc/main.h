@@ -62,6 +62,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
 
+void Set_Motor_Speed(volatile uint32_t * channel1, volatile uint32_t * channel2, int32_t motor_speed);
+
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
