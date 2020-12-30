@@ -86,8 +86,8 @@ Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimit
 Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimiter = 0};
 
 volatile uint8_t command_received = 0;
-volatile uint8_t current_period = 0;
-volatile uint8_t command_received_period = 0;
+volatile uint8_t command_received_ticker = 0;
+
 volatile uint16_t motor1_position_prev = 0;
 volatile uint16_t motor2_position_prev = 0;
 volatile uint16_t motor3_position_prev = 0;
@@ -221,16 +221,19 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	if (command_received == 1) {
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 		command_received = 0;
+		command_received_ticker = 60;
+
+		// toggle led
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 
 		feedback.thrower = 666;
 
+		// set motor speeds
 		Set_Motor_Speed(&(TIM1->CCR3), &(TIM1->CCR2), command.motor1);
 		Set_Motor_Speed(&(TIM1->CCR1), &(TIM3->CCR3), command.motor2);
 		Set_Motor_Speed(&(TIM3->CCR1), &(TIM3->CCR2), command.motor3);
 
-		command_received_period = current_period;
 		CDC_Transmit_FS(&feedback, sizeof(feedback));
 	}
   }
@@ -870,8 +873,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 
 	// timeout
-	current_period += 1;
-	if (current_period - command_received_period  > 60) {
+	if (command_received_ticker > 0) {
+		command_received_ticker -= 1;
+	} else {
 		TIM1->CCR1 = 0;
 		TIM1->CCR2 = 0;
 		TIM1->CCR3 = 0;
