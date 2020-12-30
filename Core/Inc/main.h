@@ -61,8 +61,11 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
+void Turn_On_Thrower(volatile uint32_t * channel_a);
+void Turn_Off_Thrower(volatile uint32_t * channel_a);
+void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_speed);
 
-void Set_Motor_Speed(volatile uint32_t * channel1, volatile uint32_t * channel2, int32_t motor_speed);
+void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * channel_b, int32_t motor_speed);
 
 /* USER CODE END Private defines */
 
