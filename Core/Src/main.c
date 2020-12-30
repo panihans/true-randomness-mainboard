@@ -191,25 +191,64 @@ int main(void)
 
 		feedback.thrower = 666;
 
-		if (command.motor1 >= 0) {
-			TIM1->CCR3 = command.motor1 * 130;
+		int min_duty = 20000;
+		int max_duty = 65000;
+		int max_speed = 100;
+		int speed_cof = (max_duty - min_duty) / max_speed;
+		int speed_cof_n = speed_cof * -1;
+
+		if (command.motor1 > 0) {
+			if (command.motor1 <= 100) {
+				TIM1->CCR3 = command.motor1 * speed_cof + min_duty;
+			} else {
+				TIM1->CCR3 = command.motor1;
+			}
 			TIM1->CCR2 = 0;
+		} else if (command.motor1 < 0) {
+			if (command.motor1 >= -100) {
+				TIM1->CCR2 = command.motor1 * speed_cof_n;
+			} else {
+				TIM1->CCR2 = command.motor1;
+			}
+			TIM1->CCR3 = 0;
 		} else {
-			TIM1->CCR2 = command.motor1 * 130 * -1;
+			TIM1->CCR3 = 0;
 			TIM1->CCR3 = 0;
 		}
-		if (command.motor2 >= 0) {
-			TIM1->CCR1 = command.motor2 * 130;
+		if (command.motor2 > 0) {
+			if (command.motor2 <= 100) {
+				TIM1->CCR1 = command.motor2 * speed_cof + min_duty;
+			} else {
+				TIM1->CCR1 = command.motor2;
+			}
 			TIM3->CCR3 = 0;
+		} else if (command.motor2 < 0) {
+			if (command.motor2 >= -100) {
+				TIM3->CCR3 = command.motor2 * speed_cof_n;
+			} else {
+				TIM3->CCR3 = command.motor2;
+			}
+			TIM1->CCR1 = 0;
 		} else {
-			TIM3->CCR3 = command.motor2 * 130 * -1;
+			TIM3->CCR3 = 0;
 			TIM1->CCR1 = 0;
 		}
-		if (command.motor3 >= 0) {
-			TIM3->CCR1 = command.motor3 * 130;
+		if (command.motor3 > 0) {
+			if (command.motor3 <= 100) {
+				TIM3->CCR1 = command.motor3 * speed_cof + min_duty;
+			} else {
+				TIM3->CCR1 = command.motor3;
+			}
 			TIM3->CCR2 = 0;
+		} else if (command.motor3 < 0) {
+			if (command.motor3 >= -100) {
+				TIM3->CCR2 = command.motor3 * speed_cof_n;
+			} else {
+				TIM3->CCR2 = command.motor3;
+			}
+			TIM3->CCR1 = 0;
 		} else {
-			TIM3->CCR2 = command.motor3 * 130 * -1;
+			TIM3->CCR1 = 0;
 			TIM3->CCR2 = 0;
 		}
 		command_received_period = current_period;
