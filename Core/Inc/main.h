@@ -55,6 +55,11 @@ extern "C" {
 #define ESC_MAX_SPEED 100
 #define ESC_CO ((ESC_MAX_CCR - ESC_MIN_CCR) / ESC_MAX_SPEED)
 
+#define SERVO_IN_MIN_CCR 4700
+#define SERVO_OUT_MIN_CCR 5000
+#define SERVO_MAX_SPEED 100
+#define SERVO_CO (400/SERVO_MAX_SPEED)
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -73,6 +78,8 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
+
+void Set_Servo_Speed(volatile uint32_t * channel_a, int32_t servo_speed, GPIO_PinState ir_status, int32_t ir_control);
 
 void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_speed);
 

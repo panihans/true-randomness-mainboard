@@ -79,11 +79,13 @@ typedef struct Command {
 	int32_t motor2;
 	int32_t motor3;
 	int32_t thrower;
+	int32_t servo;
+	int32_t ir;
 	int32_t delimiter;
 } Command;
 
-Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimiter = 0};
-Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimiter = 0};
+Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .servo = 0, .ir = 0, .delimiter = 0};
+Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .servo = 0, .ir = 0,  	 .delimiter = 0};
 
 volatile uint8_t command_received = 0;
 volatile uint8_t command_received_ticker = 0;
@@ -144,6 +146,18 @@ inline void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_spe
 	} else {
 		// stop
 		*channel_a = ESC_IDLE_CCR;
+	}
+}
+
+inline void Set_Servo_Speed(volatile uint32_t * channel_a, int32_t servo_speed, GPIO_PinState ir_status, int32_t ir_control) {
+	if (!ir_status || (ir_status && ir_control)) {
+		if (servo_speed > 0 && servo_speed <= SERVO_MAX_SPEED) {
+			*channel_a = SERVO_IN_MIN_CCR - command.servo * SERVO_CO;
+		} else if (command.servo < 0 && servo_speed >= -SERVO_MAX_SPEED) {
+			*channel_a = command.servo * -SERVO_CO + SERVO_OUT_MIN_CCR;
+		} else {
+			*channel_a = 0;
+		}
 	}
 }
 
@@ -233,6 +247,7 @@ int main(void)
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 
 		feedback.thrower = 666;
+		feedback.ir = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
 
 		// set motor speeds
 		Set_Motor_Speed(&(TIM1->CCR2), &(TIM1->CCR3), command.motor1);
@@ -240,6 +255,8 @@ int main(void)
 		Set_Motor_Speed(&(TIM3->CCR2), &(TIM3->CCR1), command.motor3);
 
 		Set_Thrower_Speed(&(TIM16->CCR1), command.thrower);
+
+		Set_Servo_Speed(&(TIM17->CCR1), command.servo, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3), command.ir);
 
 		CDC_Transmit_FS(&feedback, sizeof(feedback));
 	}
@@ -784,9 +801,9 @@ static void MX_TIM17_Init(void)
 
   /* USER CODE END TIM17_Init 1 */
   htim17.Instance = TIM17;
-  htim17.Init.Prescaler = 0;
+  htim17.Init.Prescaler = 48;
   htim17.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim17.Init.Period = 65535;
+  htim17.Init.Period = 65300;
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim17.Init.RepetitionCounter = 0;
   htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -878,6 +895,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	// pwm pid
 
+	// servo stopper
+	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3) && !command.ir) {
+		TIM17->CCR1 = 0;
+	}
+
 	// timeout
 	if (command_received_ticker > 0) {
 		command_received_ticker -= 1;
@@ -892,6 +914,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 		// stop thrower
 		TIM16->CCR1 = ESC_IDLE_CCR;
+
+		// stop servo
+		TIM17->CCR1 = 0;
 	}
 }
 /* USER CODE END 4 */
