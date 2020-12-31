@@ -235,9 +235,9 @@ int main(void)
 		feedback.thrower = 666;
 
 		// set motor speeds
-		Set_Motor_Speed(&(TIM1->CCR3), &(TIM1->CCR2), command.motor1);
-		Set_Motor_Speed(&(TIM1->CCR1), &(TIM3->CCR3), command.motor2);
-		Set_Motor_Speed(&(TIM3->CCR1), &(TIM3->CCR2), command.motor3);
+		Set_Motor_Speed(&(TIM1->CCR2), &(TIM1->CCR3), command.motor1);
+		Set_Motor_Speed(&(TIM3->CCR3), &(TIM1->CCR1), command.motor2);
+		Set_Motor_Speed(&(TIM3->CCR2), &(TIM3->CCR1), command.motor3);
 
 		Set_Thrower_Speed(&(TIM16->CCR1), command.thrower);
 
@@ -871,9 +871,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	motor1_position_prev = motor1_position;
 	motor2_position_prev = motor2_position;
 	motor3_position_prev = motor3_position;
-	feedback.motor1 = motor1_position_change * 60 * 60 / 64 / 19 * -1; //60hz, 60s, 64cpr, 19~=18.75 gear ratio, inverted
-	feedback.motor2 = motor2_position_change * 60 * 60 / 64 / 19 * -1;
-	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19 * -1;
+	feedback.motor1 = motor1_position_change * 60 * 60 / 64 / 19; //60hz, 60s, 64cpr, 19~=18.75 gear ratio, inverted
+	feedback.motor2 = motor2_position_change * 60 * 60 / 64 / 19;
+	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19;
 	feedback.thrower = 666;
 
 	// pwm pid

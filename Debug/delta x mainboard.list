@@ -436,21 +436,21 @@ int main(void)
  8000426:	60da      	str	r2, [r3, #12]
 
 		// set motor speeds
-		Set_Motor_Speed(&(TIM1->CCR3), &(TIM1->CCR2), command.motor1);
+		Set_Motor_Speed(&(TIM1->CCR2), &(TIM1->CCR3), command.motor1);
  8000428:	4b21      	ldr	r3, [pc, #132]	; (80004b0 <main+0x184>)
  800042a:	681b      	ldr	r3, [r3, #0]
  800042c:	461a      	mov	r2, r3
  800042e:	4921      	ldr	r1, [pc, #132]	; (80004b4 <main+0x188>)
  8000430:	4821      	ldr	r0, [pc, #132]	; (80004b8 <main+0x18c>)
  8000432:	f7ff ff11 	bl	8000258 <Set_Motor_Speed>
-		Set_Motor_Speed(&(TIM1->CCR1), &(TIM3->CCR3), command.motor2);
+		Set_Motor_Speed(&(TIM3->CCR3), &(TIM1->CCR1), command.motor2);
  8000436:	4b1e      	ldr	r3, [pc, #120]	; (80004b0 <main+0x184>)
  8000438:	685b      	ldr	r3, [r3, #4]
  800043a:	461a      	mov	r2, r3
  800043c:	491f      	ldr	r1, [pc, #124]	; (80004bc <main+0x190>)
  800043e:	4820      	ldr	r0, [pc, #128]	; (80004c0 <main+0x194>)
  8000440:	f7ff ff0a 	bl	8000258 <Set_Motor_Speed>
-		Set_Motor_Speed(&(TIM3->CCR1), &(TIM3->CCR2), command.motor3);
+		Set_Motor_Speed(&(TIM3->CCR2), &(TIM3->CCR1), command.motor3);
  8000444:	4b1a      	ldr	r3, [pc, #104]	; (80004b0 <main+0x184>)
  8000446:	689b      	ldr	r3, [r3, #8]
  8000448:	461a      	mov	r2, r3
@@ -490,12 +490,12 @@ int main(void)
  80004a8:	48000400 	.word	0x48000400
  80004ac:	200001b4 	.word	0x200001b4
  80004b0:	200001a0 	.word	0x200001a0
- 80004b4:	40012c38 	.word	0x40012c38
- 80004b8:	40012c3c 	.word	0x40012c3c
- 80004bc:	4000043c 	.word	0x4000043c
- 80004c0:	40012c34 	.word	0x40012c34
- 80004c4:	40000438 	.word	0x40000438
- 80004c8:	40000434 	.word	0x40000434
+ 80004b4:	40012c3c 	.word	0x40012c3c
+ 80004b8:	40012c38 	.word	0x40012c38
+ 80004bc:	40012c34 	.word	0x40012c34
+ 80004c0:	4000043c 	.word	0x4000043c
+ 80004c4:	40000434 	.word	0x40000434
+ 80004c8:	40000438 	.word	0x40000438
  80004cc:	40014434 	.word	0x40014434
 
 080004d0 <SystemClock_Config>:
@@ -2185,7 +2185,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
  8000e5c:	4a2f      	ldr	r2, [pc, #188]	; (8000f1c <HAL_TIM_PeriodElapsedCallback+0x10c>)
  8000e5e:	8b7b      	ldrh	r3, [r7, #26]
  8000e60:	8013      	strh	r3, [r2, #0]
-	feedback.motor1 = motor1_position_change * 60 * 60 / 64 / 19 * -1; //60hz, 60s, 64cpr, 19~=18.75 gear ratio, inverted
+	feedback.motor1 = motor1_position_change * 60 * 60 / 64 / 19; //60hz, 60s, 64cpr, 19~=18.75 gear ratio, inverted
  8000e62:	697b      	ldr	r3, [r7, #20]
  8000e64:	f44f 6261 	mov.w	r2, #3600	; 0xe10
  8000e68:	fb02 f303 	mul.w	r3, r2, r3
@@ -2193,10 +2193,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
  8000e6e:	fb82 1203 	smull	r1, r2, r2, r3
  8000e72:	1252      	asrs	r2, r2, #9
  8000e74:	17db      	asrs	r3, r3, #31
- 8000e76:	1a9b      	subs	r3, r3, r2
+ 8000e76:	1ad3      	subs	r3, r2, r3
  8000e78:	4a2a      	ldr	r2, [pc, #168]	; (8000f24 <HAL_TIM_PeriodElapsedCallback+0x114>)
  8000e7a:	6013      	str	r3, [r2, #0]
-	feedback.motor2 = motor2_position_change * 60 * 60 / 64 / 19 * -1;
+	feedback.motor2 = motor2_position_change * 60 * 60 / 64 / 19;
  8000e7c:	693b      	ldr	r3, [r7, #16]
  8000e7e:	f44f 6261 	mov.w	r2, #3600	; 0xe10
  8000e82:	fb02 f303 	mul.w	r3, r2, r3
@@ -2204,10 +2204,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
  8000e88:	fb82 1203 	smull	r1, r2, r2, r3
  8000e8c:	1252      	asrs	r2, r2, #9
  8000e8e:	17db      	asrs	r3, r3, #31
- 8000e90:	1a9b      	subs	r3, r3, r2
+ 8000e90:	1ad3      	subs	r3, r2, r3
  8000e92:	4a24      	ldr	r2, [pc, #144]	; (8000f24 <HAL_TIM_PeriodElapsedCallback+0x114>)
  8000e94:	6053      	str	r3, [r2, #4]
-	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19 * -1;
+	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19;
  8000e96:	68fb      	ldr	r3, [r7, #12]
  8000e98:	f44f 6261 	mov.w	r2, #3600	; 0xe10
  8000e9c:	fb02 f303 	mul.w	r3, r2, r3
@@ -2215,7 +2215,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
  8000ea2:	fb82 1203 	smull	r1, r2, r2, r3
  8000ea6:	1252      	asrs	r2, r2, #9
  8000ea8:	17db      	asrs	r3, r3, #31
- 8000eaa:	1a9b      	subs	r3, r3, r2
+ 8000eaa:	1ad3      	subs	r3, r2, r3
  8000eac:	4a1d      	ldr	r2, [pc, #116]	; (8000f24 <HAL_TIM_PeriodElapsedCallback+0x114>)
  8000eae:	6093      	str	r3, [r2, #8]
 	feedback.thrower = 666;
