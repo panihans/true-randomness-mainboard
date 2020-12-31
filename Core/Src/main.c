@@ -87,8 +87,6 @@ Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .delimi
 
 volatile uint8_t command_received = 0;
 volatile uint8_t command_received_ticker = 0;
-volatile uint8_t esc_turned_on = 0;
-volatile uint8_t esc_wait_ticker = 0;
 
 volatile uint16_t motor1_position_prev = 0;
 volatile uint16_t motor2_position_prev = 0;
@@ -108,19 +106,12 @@ void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
 	}
 }
 
-
-int min_duty_m = 20000;
-int max_duty_m = 65000;
-int max_speed_m = 100;
-
 inline void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * channel_b, int32_t motor_speed) {
-	int speed_cof = (max_duty_m - min_duty_m) / max_speed_m;
-	int speed_cof_n = speed_cof * -1;
 	if (motor_speed > 0) {
 		// forward
-		if (motor_speed <= max_speed_m) {
+		if (motor_speed <= MOTORS_MAX_SPEED) {
 			// 0 to 100 compact range
-			*channel_a = motor_speed * speed_cof + min_duty_m;
+			*channel_a = motor_speed * MOTORS_CO + MOTORS_MIN_CCR;
 		} else {
 			// 100 to 65535 full range
 			*channel_a = motor_speed;
@@ -128,9 +119,9 @@ inline void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * c
 		*channel_b = 0;
 	} else if (motor_speed < 0) {
 		// backward
-		if (motor_speed >= -max_speed_m) {
+		if (motor_speed >= -MOTORS_MAX_SPEED) {
 			// -100 to 0 compact range
-			*channel_b = motor_speed * speed_cof_n + min_duty_m;
+			*channel_b = motor_speed * -MOTORS_CO + MOTORS_MIN_CCR;
 		} else {
 			// -65535 to -100 full range
 			*channel_b = motor_speed * -1;
@@ -143,37 +134,16 @@ inline void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * c
 	}
 }
 
-int turn_on_duty = 3600;
-int min_duty_t = 4000;
-int max_duty_t = 7000;
-int max_speed_t = 100;
-
-void Turn_On_Thrower(volatile uint32_t * channel_a) {
-	*channel_a = turn_on_duty;
-	esc_wait_ticker = 0;
-	esc_turned_on = 1;
-}
-
-void Turn_Off_Thrower(volatile uint32_t * channel_a) {
-	*channel_a = 0;
-	esc_turned_on = 0;
-}
-
 inline void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_speed) {
-	int speed_cof = (max_duty_t - min_duty_t) / max_speed_t;
 	if (thrower_speed > 0) {
-		if (esc_turned_on == 0) {
-			Turn_On_Thrower(channel_a);
-		} else {
-			// forward
-			if (thrower_speed <= max_speed_t && esc_wait_ticker == 0) {
-				// 0 to 100 compact range
-				*channel_a = thrower_speed * speed_cof + min_duty_t;
-			}
+		// forward
+		if (thrower_speed <= ESC_MAX_SPEED) {
+			// 0 to 100 compact range
+			*channel_a = thrower_speed * ESC_CO + ESC_MIN_CCR;
 		}
 	} else {
 		// stop
-		Turn_Off_Thrower(channel_a);
+		*channel_a = ESC_IDLE_CCR;
 	}
 }
 
@@ -241,7 +211,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim16, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim17, TIM_CHANNEL_1);
   TIM15->CCR1 = 0;
-  TIM16->CCR1 = 0;
+  TIM16->CCR1 = ESC_IDLE_CCR;
   TIM17->CCR1 = 0;
 
   HAL_TIM_Base_Start_IT(&htim7);
@@ -908,10 +878,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	// pwm pid
 
-	// wait for thrower motor to enable
-	if (esc_wait_ticker > 0) {
-		esc_wait_ticker -= 1;
-	}
 	// timeout
 	if (command_received_ticker > 0) {
 		command_received_ticker -= 1;
@@ -925,7 +891,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 		TIM3->CCR3 = 0;
 
 		// stop thrower
-		TIM16->CCR1 = 0;
+		TIM16->CCR1 = ESC_IDLE_CCR;
 	}
 }
 /* USER CODE END 4 */

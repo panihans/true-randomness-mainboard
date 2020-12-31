@@ -43,6 +43,18 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 
+#define MOTORS_MIN_CCR 20000
+#define MOTORS_MAX_CCR 65000
+#define MOTORS_MAX_SPEED 100
+#define MOTORS_CO ((MOTORS_MAX_CCR - MOTORS_MIN_CCR) / MOTORS_MAX_SPEED)
+
+
+#define ESC_IDLE_CCR 1000
+#define ESC_MIN_CCR 4200
+#define ESC_MAX_CCR 7000
+#define ESC_MAX_SPEED 100
+#define ESC_CO ((ESC_MAX_CCR - ESC_MIN_CCR) / ESC_MAX_SPEED)
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -61,8 +73,7 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
-void Turn_On_Thrower(volatile uint32_t * channel_a);
-void Turn_Off_Thrower(volatile uint32_t * channel_a);
+
 void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_speed);
 
 void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * channel_b, int32_t motor_speed);
