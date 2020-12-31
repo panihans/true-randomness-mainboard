@@ -49,7 +49,7 @@ extern "C" {
 #define MOTORS_CO ((MOTORS_MAX_CCR - MOTORS_MIN_CCR) / MOTORS_MAX_SPEED)
 
 
-#define ESC_IDLE_CCR 1000
+#define ESC_IDLE_CCR 4000
 #define ESC_MIN_CCR 4200
 #define ESC_MAX_CCR 7000
 #define ESC_MAX_SPEED 100
@@ -84,6 +84,7 @@ void Set_Servo_Speed(volatile uint32_t * channel_a, int32_t servo_speed, GPIO_Pi
 void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_speed);
 
 void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * channel_b, int32_t motor_speed);
+
 
 /* USER CODE END Private defines */
 
