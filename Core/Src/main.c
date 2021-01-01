@@ -93,9 +93,6 @@ volatile uint8_t command_received_ticker = 0;
 volatile uint16_t motor1_position_prev = 0;
 volatile uint16_t motor2_position_prev = 0;
 volatile uint16_t motor3_position_prev = 0;
-volatile int32_t motor1_target_rpm = 0;
-volatile int32_t motor2_target_rpm = 0;
-volatile int32_t motor3_target_rpm = 0;
 
 
 void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
@@ -587,7 +584,7 @@ static void MX_TIM7_Init(void)
   htim7.Instance = TIM7;
   htim7.Init.Prescaler = 40;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 65535;
+  htim7.Init.Period = 65044;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
@@ -892,15 +889,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	uint16_t motor1_position = TIM2->CNT;
 	uint16_t motor2_position = TIM4->CNT;
 	uint16_t motor3_position = TIM8->CNT;
-	int32_t motor1_position_change = motor1_position - motor1_position_prev;
-	int32_t motor2_position_change = motor2_position - motor2_position_prev;
-	int32_t motor3_position_change = motor3_position - motor3_position_prev;
+//	int32_t motor1_position_change = ;
+//	int32_t motor2_position_change = motor2_position - motor2_position_prev;
+//	int32_t motor3_position_change = motor3_position - motor3_position_prev;
+
+	feedback.motor1 = (((10000 + motor1_position - motor1_position_prev) % 65535) - 10000) / 2;
+	feedback.motor2 = (((10000 + motor2_position - motor2_position_prev) % 65535) - 10000) / 2;
+	feedback.motor3 = (((10000 + motor3_position - motor3_position_prev) % 65535) - 10000) / 2;
+
 	motor1_position_prev = motor1_position;
 	motor2_position_prev = motor2_position;
 	motor3_position_prev = motor3_position;
-	feedback.motor1 = motor1_position_change * 60 * 60 / 64 / 19; //60hz, 60s, 64cpr, 19~=18.75 gear ratio, inverted
-	feedback.motor2 = motor2_position_change * 60 * 60 / 64 / 19;
-	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19;
+//	feedback.motor1 = motor1_position_change * 60 * 60 / 64 / 19; //60hz, 60s, 64cpr, 19~=18.75 gear ratio, inverted
+//	feedback.motor2 = motor2_position_change * 60 * 60 / 64 / 19;
+//	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19;
 
 	// pwm pid
 //	int pGain = 1;
