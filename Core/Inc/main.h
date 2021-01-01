@@ -85,6 +85,8 @@ void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_speed);
 
 void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * channel_b, int32_t motor_speed);
 
+void Set_Motor_Speed_f(volatile uint32_t * channel_a, volatile uint32_t * channel_b, float motor_speed);
+
 
 /* USER CODE END Private defines */
 

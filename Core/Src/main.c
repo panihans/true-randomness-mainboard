@@ -75,17 +75,20 @@ static void MX_TIM17_Init(void);
 /* USER CODE BEGIN 0 */
 
 typedef struct Command {
-	int32_t motor1;
-	int32_t motor2;
-	int32_t motor3;
+	float motor1;
+	float motor2;
+	float motor3;
 	int32_t thrower;
 	int32_t servo;
 	int32_t ir;
+	float pGain;
+	float iGain;
+	float dGain;
 	int32_t delimiter;
 } Command;
 
-Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .servo = 0, .ir = 0, .delimiter = 0};
-Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .servo = 0, .ir = 0,  	 .delimiter = 0};
+Command command = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .servo = 0, .ir = 0, .pGain = 0, .iGain = 0, .dGain = 0, .delimiter = 0};
+Command feedback = {.motor1 = 0, .motor2 = 0, .motor3 = 0, .thrower = 0, .servo = 0, .ir = 0, .pGain = 0, .iGain = 0, .dGain = 0, .delimiter = 0};
 
 volatile uint8_t command_received = 0;
 volatile uint8_t command_received_ticker = 0;
@@ -93,6 +96,11 @@ volatile uint8_t command_received_ticker = 0;
 volatile uint16_t motor1_position_prev = 0;
 volatile uint16_t motor2_position_prev = 0;
 volatile uint16_t motor3_position_prev = 0;
+
+volatile float motor1_current_speed = 0;
+volatile uint32_t motor1_error_acc = 0;
+volatile float motor1_der_state = 0;
+volatile float pGain, iGain, dGain = 0;
 
 
 void CDC_On_Receive(uint8_t* buffer, uint32_t* length) {
@@ -131,6 +139,28 @@ inline void Set_Motor_Speed(volatile uint32_t * channel_a, volatile uint32_t * c
 		*channel_a = 0;
 		*channel_b = 0;
 	}
+}
+
+inline void Set_Motor_Speed_f(volatile uint32_t * channel_a, volatile uint32_t * channel_b, float motor_speed) {
+	if (motor_speed > 0) {
+			// forward
+			if (motor_speed > 100) {
+				motor_speed = 100;
+			}
+			*channel_a = motor_speed * 65000.0 / 100.0;
+			*channel_b = 0;
+		} else if (motor_speed < 0) {
+			// backward
+			if (motor_speed < -100) {
+				motor_speed = -100;
+			}
+			*channel_b = motor_speed * -(65000.0 / 100.0);
+			*channel_a = 0;
+		} else {
+			// stop
+			*channel_a = 0;
+			*channel_b = 0;
+		}
 }
 
 inline void Set_Thrower_Speed(volatile uint32_t * channel_a, int32_t thrower_speed) {
@@ -257,9 +287,10 @@ int main(void)
 //			Set_Motor_Speed(&(TIM1->CCR2), &(TIM1->CCR3), command.motor1);
 //		}
 
-		Set_Motor_Speed(&(TIM1->CCR2), &(TIM1->CCR3), command.motor1);
-		Set_Motor_Speed(&(TIM1->CCR1), &(TIM3->CCR3), command.motor2);
-		Set_Motor_Speed(&(TIM3->CCR1), &(TIM3->CCR2), command.motor3);
+		motor1_current_speed = command.motor1;
+		//Set_Motor_Speed(&(TIM1->CCR2), &(TIM1->CCR3), command.motor1);
+		//Set_Motor_Speed(&(TIM1->CCR1), &(TIM3->CCR3), command.motor2);
+		//Set_Motor_Speed(&(TIM3->CCR1), &(TIM3->CCR2), command.motor3);
 
 		Set_Thrower_Speed(&(TIM16->CCR1), command.thrower);
 
@@ -893,9 +924,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //	int32_t motor2_position_change = motor2_position - motor2_position_prev;
 //	int32_t motor3_position_change = motor3_position - motor3_position_prev;
 
-	feedback.motor1 = (((10000 + motor1_position - motor1_position_prev) % 65535) - 10000) / 2;
-	feedback.motor2 = (((10000 + motor2_position - motor2_position_prev) % 65535) - 10000) / 2;
-	feedback.motor3 = (((10000 + motor3_position - motor3_position_prev) % 65535) - 10000) / 2;
+	int quadrant = 65535 / 4;
+	if (motor1_position_prev > quadrant * 3 && motor1_position < quadrant) {
+		feedback.motor1 = (65535 - motor1_position_prev + motor1_position) / 2;
+	} else if (motor1_position_prev < quadrant && motor1_position > quadrant * 3) {
+		feedback.motor1 = (65535 - motor1_position_prev + motor1_position) / 2;
+	} else {
+		feedback.motor1 = (motor1_position - motor1_position_prev) / 2;
+	}
+//	feedback.motor1 = (((10000 + motor1_position - motor1_position_prev) % 65535) - 10000) / 2;
+//	feedback.motor2 = (((10000 + motor2_position - motor2_position_prev) % 65535) - 10000) / 2;
+//	feedback.motor3 = (((10000 + motor3_position - motor3_position_prev) % 65535) - 10000) / 2;
 
 	motor1_position_prev = motor1_position;
 	motor2_position_prev = motor2_position;
@@ -905,6 +944,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //	feedback.motor3 = motor3_position_change * 60 * 60 / 64 / 19;
 
 	// pwm pid
+	if (iGain != command.iGain) {
+		motor1_error_acc = 0;
+	}
+	if (dGain != command.dGain) {
+		motor1_der_state = 0;
+	}
+	pGain = command.pGain;
+	iGain = command.iGain;
+	dGain = command.dGain;
+	//int pGain = 1;
+	int error = command.motor1 - feedback.motor1;
+	int pTerm = error * pGain;
+
+	//float iGain = 0.01;
+	motor1_error_acc += error;
+	float iTerm = iGain * motor1_error_acc;
+	if (iTerm > 100) {
+		iTerm = 10;
+	} else if (iTerm < -100) {
+		iTerm = -10;
+	}
+	//float dGain = 0.5;
+	float dTerm = dGain*(motor1_der_state - motor1_current_speed);
+	motor1_der_state = motor1_current_speed;
+	motor1_current_speed = motor1_current_speed + pTerm + iTerm + dTerm;
+	Set_Motor_Speed_f(&(TIM1->CCR2), &(TIM1->CCR3), motor1_current_speed);
+	feedback.motor2 = iTerm;
+	feedback.motor3 = motor1_current_speed;
 //	int pGain = 1;
 //	if (motor1_target_rpm != 0) {
 //		// proportional
