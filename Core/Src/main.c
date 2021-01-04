@@ -100,6 +100,7 @@ typedef struct Command {
 	int32_t thrower;
 	int32_t servo;
 	int32_t ir;
+	int32_t pid_type;
 	int32_t delimiter;
 } Command;
 
@@ -202,19 +203,18 @@ inline void Set_Servo_Speed(volatile uint32_t *channel_a, int32_t servo_speed,
 	}
 }
 
-Motor motor1 = { .prev_pos = 0, .cur_pos = 0, .cur_enc_speed = 0,
-		.target_speed = 0, .cur_speed = 0, .prev_speed = 0, .err_sum = 0 };
-Motor motor2 = { .prev_pos = 0, .cur_pos = 0, .cur_enc_speed = 0,
-		.target_speed = 0, .cur_speed = 0, .prev_speed = 0, .err_sum = 0 };
-Motor motor3 = { .prev_pos = 0, .cur_pos = 0, .cur_enc_speed = 0,
-		.target_speed = 0, .cur_speed = 0, .prev_speed = 0, .err_sum = 0 };
+Motor motor1;
+Motor motor2;
+Motor motor3;
 
 inline void Calculate_PID(Motor *motor) {
 	pGain = 1;
-	iGain = 0.005;
-	dGain = 5;
+	iGain = command.pid_type == 0 ? 0.005 : 0.001;
+	dGain = command.pid_type == 0 ? 5 : 10;
 
-	int error = motor->target_speed - motor->cur_enc_speed;
+	int error = motor->target_speed
+			- (command.pid_type == 0 ?
+					motor->enc_speed_hist_avg : motor->cur_enc_speed);
 	int pTerm = error * pGain;
 
 	motor->err_sum += error;
@@ -248,6 +248,19 @@ void Handle_Encoder(Motor *motor, uint16_t count) {
 	motor->cur_enc_speed = Calculate_Encoder_Diff(motor->prev_pos,
 			motor->cur_pos);
 	motor->prev_pos = motor->cur_pos;
+
+	motor->enc_speed_hist[motor->enc_speed_hist_cnt] = motor->cur_enc_speed;
+	if (motor->enc_speed_hist_cnt >= 9) {
+		motor->enc_speed_hist_cnt = 0;
+	} else {
+		motor->enc_speed_hist_cnt += 1;
+	}
+
+	int sum = 0;
+	for (int i = 0; i < 10; i++) {
+		sum += motor->enc_speed_hist[i];
+	}
+	motor->enc_speed_hist_avg = sum / 10;
 }
 
 /* USER CODE END 0 */
@@ -950,9 +963,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	Handle_Encoder(&motor1, TIM2->CNT);
 	Handle_Encoder(&motor2, TIM4->CNT);
 	Handle_Encoder(&motor3, TIM8->CNT);
-	feedback.motor1 = motor1.cur_enc_speed;
-	feedback.motor2 = motor2.cur_enc_speed;
-	feedback.motor3 = motor3.cur_enc_speed;
+	feedback.motor1 =
+			command.pid_type == 0 ?
+					motor1.cur_enc_speed : motor1.enc_speed_hist_avg;
+	feedback.motor2 =
+			command.pid_type == 0 ?
+					motor2.cur_enc_speed : motor2.enc_speed_hist_avg;
+	feedback.motor3 =
+			command.pid_type == 0 ?
+					motor3.cur_enc_speed : motor3.enc_speed_hist_avg;
 
 	Calculate_PID(&motor1);
 	Calculate_PID(&motor2);

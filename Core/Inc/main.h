@@ -103,6 +103,11 @@ typedef struct Motor {
 	uint16_t prev_pos;
 	uint16_t cur_pos;
 	int cur_enc_speed;
+
+	int enc_speed_hist[10];
+	int enc_speed_hist_cnt;
+	float enc_speed_hist_avg;
+
 	float target_speed;
 	float cur_speed;
 	float prev_speed;
