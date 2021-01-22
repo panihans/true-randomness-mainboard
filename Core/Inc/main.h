@@ -86,10 +86,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
 
-void Set_Servo_Speed(volatile uint32_t *channel_a, int32_t servo_speed,
+void Set_Servo_Speed(volatile uint32_t *channel_a, float servo_speed,
 		GPIO_PinState ir_status, int32_t ir_control);
 
-void Set_Thrower_Speed(volatile uint32_t *channel_a, int32_t thrower_speed);
+void Set_Thrower_Speed(volatile uint32_t *channel_a, float thrower_speed);
 
 void Set_Motor_Speed(volatile uint32_t *channel_a, volatile uint32_t *channel_b,
 		int32_t motor_speed);

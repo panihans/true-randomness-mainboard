@@ -78,8 +78,8 @@ typedef struct Command {
 	float motor1;
 	float motor2;
 	float motor3;
-	int32_t thrower;
-	int32_t servo;
+	float thrower;
+	float servo;
 	int32_t ir;
 //	float pGain;
 //	float iGain;
@@ -158,7 +158,7 @@ inline void Set_Motor_Speed_f(volatile uint32_t *channel_a,
 }
 
 inline void Set_Thrower_Speed(volatile uint32_t *channel_a,
-		int32_t thrower_speed) {
+		float thrower_speed) {
 	if (thrower_speed > 0) {
 		// forward
 		if (thrower_speed <= ESC_MAX_SPEED) {
@@ -171,7 +171,7 @@ inline void Set_Thrower_Speed(volatile uint32_t *channel_a,
 	}
 }
 
-inline void Set_Servo_Speed(volatile uint32_t *channel_a, int32_t servo_speed,
+inline void Set_Servo_Speed(volatile uint32_t *channel_a, float servo_speed,
 		GPIO_PinState ir_status, int32_t ir_control) {
 	if (!ir_status || (ir_status && ir_control)) {
 		if (servo_speed > 0 && servo_speed <= SERVO_MAX_SPEED) {
