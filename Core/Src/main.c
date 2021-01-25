@@ -348,13 +348,13 @@ int main(void) {
 
 			feedback.ir = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3);
 
-			if (fabs(motor1.target_speed - command.motor1) > 0.1) {
+			if (fabs(0 - command.motor1) < 0.1) {
 				motor1.err_sum = 0;
 			}
-			if (fabs(motor2.target_speed - command.motor2) > 0.1) {
+			if (fabs(0 - command.motor2) < 0.1) {
 				motor2.err_sum = 0;
 			}
-			if (fabs(motor3.target_speed - command.motor3) > 0.1) {
+			if (fabs(0 - command.motor3) < 0.1) {
 				motor3.err_sum = 0;
 			}
 			motor1.target_speed = command.motor1;

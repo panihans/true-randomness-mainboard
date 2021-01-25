@@ -1,0 +1,1 @@
+rename the directory to 'delta x mainboard' or stm32cubeide import will fail
