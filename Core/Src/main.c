@@ -81,9 +81,9 @@ typedef struct Command {
 	float thrower;
 	float servo;
 	int32_t ir;
-//	float pGain;
-//	float iGain;
-//	float dGain;
+	float pGain;
+	float iGain;
+	float dGain;
 	int32_t pid_type;
 	int32_t delimiter;
 } Command;
@@ -105,51 +105,24 @@ void CDC_On_Receive(uint8_t *buffer, uint32_t *length) {
 	}
 }
 
-inline void Set_Motor_Speed(volatile uint32_t *channel_a,
-		volatile uint32_t *channel_b, int32_t motor_speed) {
-	if (motor_speed > 0) {
-		// forward
-		if (motor_speed <= MOTORS_MAX_SPEED) {
-			// 0 to 100 compact range
-			*channel_a = motor_speed * MOTORS_CO + MOTORS_MIN_CCR;
-		} else {
-			// 100 to 65535 full range
-			*channel_a = motor_speed;
-		}
-		*channel_b = 0;
-	} else if (motor_speed < 0) {
-		// backward
-		if (motor_speed >= -MOTORS_MAX_SPEED) {
-			// -100 to 0 compact range
-			*channel_b = motor_speed * -MOTORS_CO + MOTORS_MIN_CCR;
-		} else {
-			// -65535 to -100 full range
-			*channel_b = motor_speed * -1;
-		}
-		*channel_a = 0;
-	} else {
-		// stop
-		*channel_a = 0;
-		*channel_b = 0;
-	}
-}
-
 inline void Set_Motor_Speed_f(volatile uint32_t *channel_a,
 		volatile uint32_t *channel_b, float motor_speed) {
-	if (motor_speed > 0) {
-		// forward
-		if (motor_speed > 100) {
-			motor_speed = 100;
+	if (fabs(0 - motor_speed) > 0.1) {
+		if (motor_speed > 0) {
+			// forward
+			if (motor_speed > 100) {
+				motor_speed = 100;
+			}
+			*channel_a = motor_speed * 65000.0 / 100.0;
+			*channel_b = 0;
+		} else if (motor_speed < 0) {
+			// backward
+			if (motor_speed < -100) {
+				motor_speed = -100;
+			}
+			*channel_b = motor_speed * -(65000.0 / 100.0);
+			*channel_a = 0;
 		}
-		*channel_a = motor_speed * 65000.0 / 100.0;
-		*channel_b = 0;
-	} else if (motor_speed < 0) {
-		// backward
-		if (motor_speed < -100) {
-			motor_speed = -100;
-		}
-		*channel_b = motor_speed * -(65000.0 / 100.0);
-		*channel_a = 0;
 	} else {
 		// stop
 		*channel_a = 0;
@@ -157,8 +130,7 @@ inline void Set_Motor_Speed_f(volatile uint32_t *channel_a,
 	}
 }
 
-inline void Set_Thrower_Speed(volatile uint32_t *channel_a,
-		float thrower_speed) {
+inline void Set_Thrower_Speed(volatile uint32_t *channel_a, float thrower_speed) {
 	if (thrower_speed > 0) {
 		// forward
 		if (thrower_speed <= ESC_MAX_SPEED) {
@@ -189,19 +161,22 @@ Motor motor2;
 Motor motor3;
 
 inline void Calculate_PID(Motor *motor) {
-	// based on "PID Without a PhD" by Tim Wescott
-	// https://www.embeddedrelated.com/showarticle/943.php
+// based on "PID Without a PhD" by Tim Wescott
+// https://www.embeddedrelated.com/showarticle/943.php
 	if (motor->target_speed > 0.1 || motor->target_speed < -0.1) {
 		float pTerm, iTerm, dTerm;
-		if (command.pid_type == 0) {
-			pGain = 1;
-			iGain = 0.005;
-			dGain = 5;
-		} else {
-			pGain = 1;
-			iGain = 0.001;
-			dGain = 10;
-		}
+//		if (command.pid_type == 0) {
+//			pGain = 1;
+//			iGain = 0.005;
+//			dGain = 5;
+//		} else {
+//			pGain = 1;
+//			iGain = 0.001;
+//			dGain = 10;
+//		}
+		pGain = command.pGain;
+		iGain = command.iGain;
+		dGain = command.dGain;
 
 		int error = 0;
 		if (command.pid_type == 0) {
@@ -236,7 +211,7 @@ inline int Calculate_Encoder_Diff(uint16_t prev_pos, uint16_t cur_pos) {
 		// encoder didn't overflow
 		diff = cur_pos - prev_pos;
 	}
-	return clamp(-200, 200, diff) / 2;
+	return diff;	// clamp(-200, 200, diff) / 2;
 }
 
 void Handle_Encoder(Motor *motor, uint16_t count) {
@@ -341,7 +316,7 @@ int main(void) {
 		/* USER CODE BEGIN 3 */
 		if (command_received == 1) {
 			command_received = 0;
-			command_received_ticker = 70;
+			command_received_ticker = 140;
 
 			// toggle led
 			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
@@ -674,9 +649,9 @@ static void MX_TIM7_Init(void) {
 
 	/* USER CODE END TIM7_Init 1 */
 	htim7.Instance = TIM7;
-	htim7.Init.Prescaler = 40;
+	htim7.Init.Prescaler = 20;
 	htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim7.Init.Period = 65044;
+	htim7.Init.Period = 63500;
 	htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 	if (HAL_TIM_Base_Init(&htim7) != HAL_OK) {
 		Error_Handler();
@@ -983,16 +958,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	Calculate_PID(&motor1);
 	Calculate_PID(&motor2);
 	Calculate_PID(&motor3);
-	Set_Motor_Speed(&(TIM1->CCR2), &(TIM1->CCR3), motor1.cur_speed);
-	Set_Motor_Speed(&(TIM1->CCR1), &(TIM3->CCR3), motor2.cur_speed);
-	Set_Motor_Speed(&(TIM3->CCR1), &(TIM3->CCR2), motor3.cur_speed);
+	Set_Motor_Speed_f(&(TIM1->CCR2), &(TIM1->CCR3), motor1.cur_speed);
+	Set_Motor_Speed_f(&(TIM1->CCR1), &(TIM3->CCR3), motor2.cur_speed);
+	Set_Motor_Speed_f(&(TIM3->CCR1), &(TIM3->CCR2), motor3.cur_speed);
 
-	// servo stopper
+// servo stopper
 	if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3) && !command.ir) {
 		TIM17->CCR1 = 0;
 	}
 
-	// timeout
+// timeout
 	if (command_received_ticker > 0) {
 		command_received_ticker -= 1;
 	} else {
